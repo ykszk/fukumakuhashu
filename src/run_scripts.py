@@ -30,6 +30,7 @@ args, _unknown = parser.parse_known_args()
 # %%
 args.output.mkdir(parents=True, exist_ok=True)
 total_output = args.output / "total_segmentator.nii.gz"
+total_output = total_output.resolve()
 logger.info(
     f"Running Total Segmentator with input: {args.input} and output: {total_output}"
 )
@@ -47,15 +48,17 @@ command = [
     "-o",
     str(total_output),
 ]
-subprocess.run(command)
+subprocess.check_call(command)
 logger.info("TotalSegmentator completed.")
 
 #%%
 muscle_fat_output = args.output / "muscle_fat.nii.gz"
+script = Path(__file__).parent / "../CT-Muscle-and-Fat-Segmentation/predict_muscle_fat.py"
+script = script.resolve()
+logger.info(f"Using script at: {script}")
 logger.info(
     f"Running Muscle-Fat Segmentation with input: {args.input} and output: {muscle_fat_output}"
 )
-script = Path(__file__).parent / "../CT-Muscle-and-Fat-Segmentation/predict_muscle_fat.py"
 original_dir = Path.cwd()
 # Change working directory to the script's directory
 import os
@@ -66,14 +69,19 @@ os.environ["nnUNet_preprocessed"] = str(args.tmpdir / "preprocessed")
 os.environ["nnUNet_results"] = str(args.tmpdir / "results")
 # Run the muscle-fat segmentation script
 command = [
-    "python3",
+    "python",
     str(script),
     "--input",
     str(args.input),
     "--output",
     str(muscle_fat_output),
 ]
-subprocess.run(command)
+try:
+    subprocess.check_output(command)
+except subprocess.CalledProcessError as e:
+    logger.error(f"Muscle-Fat Segmentation failed with error: {e.output.decode()}")
+    logger.error(f"Command: {' '.join(command)}")
+    raise e
 # Change back to the original working directory
 os.chdir(original_dir)
 logger.info("Muscle-Fat Segmentation completed.")
@@ -82,7 +90,7 @@ logger.info("Muscle-Fat Segmentation completed.")
 logger.info("Segment PCI")
 script = Path(__file__).parent / "segment_pci.py"
 command = [
-    "python3",
+    "python",
     str(script),
     "--total",
     str(total_output),
@@ -91,15 +99,15 @@ command = [
     "--output",
     str(args.output / "pci_segmentation.nii.gz"),
 ]
-subprocess.run(command)
+subprocess.check_call(command)
 logger.info("PCI Segmentation completed.")
 # %%
 logger.info("Visualize segmentations")
 script = Path(__file__).parent / "visualize_segmentation.py"
 command = [
-    "python3",
+    "python",
     str(script),
-    "--input",
+    "--image",
     str(args.input),
     "--total",
     str(total_output),
@@ -110,5 +118,5 @@ command = [
     "--output",
     str(args.output / "segmentation_visualization.png"),
 ]
-subprocess.run(command)
+subprocess.check_call(command)
 logger.info("Visualization completed.")
