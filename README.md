@@ -1,0 +1,1 @@
+fukumaku hashu detection
