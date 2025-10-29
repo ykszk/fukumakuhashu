@@ -37,8 +37,12 @@ logger.info(
 import subprocess
 
 # TotalSegmentator --task total -ml -bs -i INPUT -o OUTPUT
+# python -m totalsegmentator.bin.TotalSegmentator --task total -ml -bs -i INPUT -o OUTPUT
 command = [
-    "TotalSegmentator",
+    # "TotalSegmentator",
+    "python",
+    "-m",
+    "totalsegmentator.bin.TotalSegmentator",
     "--task",
     "total",
     "-ml",
