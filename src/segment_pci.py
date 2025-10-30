@@ -2,6 +2,7 @@
 import numpy as np
 import SimpleITK as sitk
 import argparse
+from loguru import logger
 
 # Peritoneal Cancer Index (PCI) segmentation (upper/mid/lower abdomen fat)
 
@@ -14,9 +15,14 @@ parser.add_argument("--muscle_fat", default='../../data/example/Panoramix-croppe
 parser.add_argument("--output", default='../../data/example/Panoramix-cropped.pci.nii.gz')
 
 args, _unknown = parser.parse_known_args()
+orientation = "LPS"
 
 img_total = sitk.ReadImage(args.total)
+img_total = sitk.DICOMOrient(img_total, orientation)
+
 img_muscle_fat = sitk.ReadImage(args.muscle_fat)
+img_muscle_fat = sitk.DICOMOrient(img_muscle_fat, orientation)
+
 arr_total = sitk.GetArrayFromImage(img_total)
 arr_muscle_fat = sitk.GetArrayFromImage(img_muscle_fat)
 #%%
@@ -74,7 +80,11 @@ iliac_crest = np.max(iliac_indices[0])
 # sacrum
 sacrum = arr_total==total_ct.SACRUM
 sacrum_indices = np.where(sacrum)
-sacrum_lower = np.min(sacrum_indices[0])
+if not sacrum_indices[0].size:
+    logger.warning("Sacrum not found, using bottom slice as sacrum lower bound")
+    sacrum_lower = 0 # arr_total.shape[0]-1
+else:
+    sacrum_lower = np.min(sacrum_indices[0])
 
 #%%
 mip = np.maximum(np.max(liver, axis=1), np.max(costal_arch, axis=1)*2)
