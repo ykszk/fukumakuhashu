@@ -53,7 +53,7 @@ def compute_center_of_mass(binary_mask):
               int(np.mean(coords[2]))]
     return center
 liver_center = compute_center_of_mass(total==total_ct.LIVER)
-t8_center = compute_center_of_mass(total==total_ct.VERTEBRAE_T8)
+ts_center = compute_center_of_mass(np.logical_and(total_ct.VERTEBRAE_T12 <= total, total <= total_ct.VERTEBRAE_T1))
 # kidney_left_center = compute_center_of_mass(total==total_ct.KIDNEY_LEFT)
 kidney_left_top = np.where(total==total_ct.KIDNEY_LEFT)[0].min()
 
@@ -72,7 +72,7 @@ total_colors = np.concatenate([total_colors, np.ones((total_colors.shape[0],1))]
 total_colors[0,:] = np.array([0,0,0,0])
 total_cmap = matplotlib.colors.ListedColormap(total_colors)
 
-ref_indexes = [kidney_left_top, liver_center[1], t8_center[2]]
+ref_indexes = [kidney_left_top, liver_center[1], ts_center[2]]
 aspects = [spacings[1]/spacings[2], spacings[0]/spacings[2], spacings[0]/spacings[1]]
 view_names = ['Axial', 'Coronal', 'Sagittal']
 plt.figure(figsize=(10,10))
