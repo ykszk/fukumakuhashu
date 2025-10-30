@@ -13,6 +13,6 @@ echo script: %SCRIPT%
 echo output: %OUTPUT_DIR%
 echo input: %INPUT%
 
-%PYTHON% %SCRIPT% --input %INPUT% --output %OUTPUT_DIR%
+%PYTHON% %SCRIPT% --input %INPUT% --output %OUTPUT_DIR% --skip_existing
 
 pause

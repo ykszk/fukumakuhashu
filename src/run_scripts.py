@@ -1,7 +1,9 @@
 # %%
 import argparse
-from loguru import logger
 from pathlib import Path
+import subprocess
+
+from loguru import logger
 
 parser = argparse.ArgumentParser()
 # input .nii.gz file
@@ -25,6 +27,12 @@ parser.add_argument(
     help="Path to temporary directory for nnUNet.",
     default="/tmp/nnUNet",
 )
+# skip existing outputs
+parser.add_argument(
+    "--skip_existing",
+    action="store_true",
+    help="Skip processing if output files already exist.",
+)
 
 args, _unknown = parser.parse_known_args()
 # %%
@@ -34,13 +42,16 @@ total_output = total_output.resolve()
 logger.info(
     f"Running Total Segmentator with input: {args.input} and output: {total_output}"
 )
-import subprocess
 
-# TotalSegmentator --task total -ml -bs -i INPUT -o OUTPUT
-# python -m totalsegmentator.bin.TotalSegmentator --task total -ml -bs -i INPUT -o OUTPUT
-command = [
-    # "TotalSegmentator",
-    "python",
+if args.skip_existing and total_output.exists():
+    logger.warning(f"Total Segmentator output already exists at {total_output}, skipping.")
+    # Skip running the command
+else:
+    # TotalSegmentator --task total -ml -bs -i INPUT -o OUTPUT
+    # python -m totalsegmentator.bin.TotalSegmentator --task total -ml -bs -i INPUT -o OUTPUT
+    command = [
+        # "TotalSegmentator",
+        "python",
     "-m",
     "totalsegmentator.bin.TotalSegmentator",
     "--task",
@@ -52,25 +63,14 @@ command = [
     "-o",
     str(total_output),
 ]
-subprocess.check_call(command)
-logger.info("TotalSegmentator completed.")
+    subprocess.check_call(command)
+    logger.info("TotalSegmentator completed.")
 
 #%%
 muscle_fat_output = args.output / "muscle_fat.nii.gz"
 script = Path(__file__).parent / "../CT-Muscle-and-Fat-Segmentation/predict_muscle_fat.py"
 script = script.resolve()
 logger.info(f"Using script at: {script}")
-logger.info(
-    f"Running Muscle-Fat Segmentation with input: {args.input} and output: {muscle_fat_output}"
-)
-original_dir = Path.cwd()
-# Change working directory to the script's directory
-import os
-os.chdir(script.parent)
-# Set dummy nnUNet environment variables
-os.environ["nnUNet_raw"] = str(args.tmpdir / "raw")
-os.environ["nnUNet_preprocessed"] = str(args.tmpdir / "preprocessed")
-os.environ["nnUNet_results"] = str(args.tmpdir / "results")
 # Run the muscle-fat segmentation script
 command = [
     "python",
@@ -80,19 +80,34 @@ command = [
     "--output",
     str(muscle_fat_output),
 ]
-try:
-    subprocess.check_output(command)
-except subprocess.CalledProcessError as e:
-    logger.error(f"Muscle-Fat Segmentation failed with error: {e.output.decode()}")
-    logger.error(f"Command: {' '.join(command)}")
-    raise e
-# Change back to the original working directory
-os.chdir(original_dir)
-logger.info("Muscle-Fat Segmentation completed.")
+if args.skip_existing and muscle_fat_output.exists():
+    logger.warning(f"Muscle-Fat Segmentation output already exists at {muscle_fat_output}, skipping.")
+else:
+    logger.info(
+        f"Running Muscle-Fat Segmentation with input: {args.input} and output: {muscle_fat_output}"
+    )
+    original_dir = Path.cwd()
+    # Change working directory to the script's directory
+    import os
+    os.chdir(script.parent)
+    # Set dummy nnUNet environment variables
+    os.environ["nnUNet_raw"] = str(args.tmpdir / "raw")
+    os.environ["nnUNet_preprocessed"] = str(args.tmpdir / "preprocessed")
+    os.environ["nnUNet_results"] = str(args.tmpdir / "results")
+    try:
+        subprocess.check_output(command)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Muscle-Fat Segmentation failed with error: {e.output.decode()}")
+        logger.error(f"Command: {' '.join(command)}")
+        raise e
+    # Change back to the original working directory
+    os.chdir(original_dir)
+    logger.info("Muscle-Fat Segmentation completed.")
 
 #%%
 logger.info("Segment PCI")
 script = Path(__file__).parent / "segment_pci.py"
+pci_output = args.output / "pci_segmentation.nii.gz"
 command = [
     "python",
     str(script),
@@ -101,26 +116,33 @@ command = [
     "--muscle_fat",
     str(muscle_fat_output),
     "--output",
-    str(args.output / "pci_segmentation.nii.gz"),
+    str(pci_output),
 ]
-subprocess.check_call(command)
-logger.info("PCI Segmentation completed.")
+if args.skip_existing and pci_output.exists():
+    logger.warning(f"PCI Segmentation output already exists at {pci_output}, skipping.")
+else:
+    subprocess.check_call(command)
+    logger.info("PCI Segmentation completed.")
 # %%
 logger.info("Visualize segmentations")
 script = Path(__file__).parent / "visualize_segmentation.py"
-command = [
-    "python",
-    str(script),
-    "--image",
-    str(args.input),
-    "--total",
-    str(total_output),
-    "--muscle_fat",
-    str(muscle_fat_output),
-    "--pci",
-    str(args.output / "pci_segmentation.nii.gz"),
-    "--output",
-    str(args.output / "segmentation_visualization.png"),
-]
-subprocess.check_call(command)
-logger.info("Visualization completed.")
+image_output = args.output / "segmentation_visualization.png"
+if args.skip_existing and image_output.exists():
+    logger.warning(f"Visualization output already exists at {image_output}, skipping.")
+else:
+    command = [
+        "python",
+        str(script),
+        "--image",
+        str(args.input),
+        "--total",
+        str(total_output),
+        "--muscle_fat",
+        str(muscle_fat_output),
+        "--pci",
+        str(pci_output),
+        "--output",
+        str(image_output),
+    ]
+    subprocess.check_call(command)
+    logger.info("Visualization completed.")
