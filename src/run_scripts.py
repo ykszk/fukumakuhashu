@@ -67,6 +67,30 @@ else:
     logger.info("TotalSegmentator completed.")
 
 #%%
+# crop abdomen
+logger.info("Cropping abdomen")
+script = Path(__file__).parent / "crop_abdomen.py"
+cropped_input = args.output / "abdomen_cropped.nii.gz"
+cropped_total = args.output / "abdomen_cropped_total_segmentator.nii.gz"
+command = [
+    "python",
+    str(script),
+    "--input",
+    str(args.input),
+    "--total",
+    str(total_output),
+    "--output",
+    str(cropped_input),
+    "--output_total",
+    str(cropped_total),
+]
+if args.skip_existing and cropped_input.exists() and cropped_total.exists():
+    logger.warning(f"Cropped abdomen output already exists at {cropped_input} and {cropped_total}, skipping.")
+else:
+    subprocess.check_call(command)
+    logger.info("Cropping abdomen completed.")
+
+#%%
 muscle_fat_output = args.output / "muscle_fat.nii.gz"
 script = Path(__file__).parent / "../CT-Muscle-and-Fat-Segmentation/predict_muscle_fat.py"
 script = script.resolve()
@@ -76,7 +100,7 @@ command = [
     "python",
     str(script),
     "--input",
-    str(args.input),
+    str(cropped_input),
     "--output",
     str(muscle_fat_output),
 ]
@@ -84,7 +108,7 @@ if args.skip_existing and muscle_fat_output.exists():
     logger.warning(f"Muscle-Fat Segmentation output already exists at {muscle_fat_output}, skipping.")
 else:
     logger.info(
-        f"Running Muscle-Fat Segmentation with input: {args.input} and output: {muscle_fat_output}"
+        f"Running Muscle-Fat Segmentation with input: {cropped_input} and output: {muscle_fat_output}"
     )
     original_dir = Path.cwd()
     # Change working directory to the script's directory
@@ -112,7 +136,7 @@ command = [
     "python",
     str(script),
     "--total",
-    str(total_output),
+    str(cropped_total),
     "--muscle_fat",
     str(muscle_fat_output),
     "--output",
@@ -134,9 +158,9 @@ else:
         "python",
         str(script),
         "--image",
-        str(args.input),
+        str(cropped_input),
         "--total",
-        str(total_output),
+        str(cropped_total),
         "--muscle_fat",
         str(muscle_fat_output),
         "--pci",
