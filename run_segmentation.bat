@@ -2,7 +2,7 @@
 
 set SCRIPT_DIR=%~dp0src\
 set SCRIPT=%SCRIPT_DIR%run_scripts.py
-set OUTPUT_DIR=%SCRIPT_DIR%..\..\output
+set OUTPUT_DIR=%SCRIPT_DIR%..\..\..\output\%~nx1
 set PYTHON_DIR=%SCRIPT_DIR%..\..\python\
 set PYTHON=%PYTHON_DIR%python.exe
 set TOTAL_SEGMENTATOR=%PYTHON_DIR%Scripts\TotalSegmentator.exe
