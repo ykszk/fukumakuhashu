@@ -18,6 +18,7 @@ args, _unknown = parser.parse_known_args()
 orientation = "LPS"
 
 img_total = sitk.ReadImage(args.total)
+original_orientation = sitk.DICOMOrientImageFilter.GetOrientationFromDirectionCosines(img_total.GetDirection())
 img_total = sitk.DICOMOrient(img_total, orientation)
 
 img_muscle_fat = sitk.ReadImage(args.muscle_fat)
@@ -113,6 +114,7 @@ plt.colorbar()
 # %%
 img_pci_fat = sitk.GetImageFromArray(pci_fat)
 img_pci_fat.CopyInformation(img_total)
+img_pci_fat = sitk.DICOMOrient(img_pci_fat, original_orientation)
 sitk.WriteImage(img_pci_fat, args.output)
 
 # %%
