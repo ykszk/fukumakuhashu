@@ -170,3 +170,52 @@ else:
     ]
     subprocess.check_call(command)
     logger.info("Visualization completed.")
+
+
+# %%
+logger.info("Pyradiomics feature extraction")
+
+settings_file = Path(__file__).parent / "../settings/default.yml"
+settings_file = settings_file.resolve()
+custom_settings = Path(__file__).parent / "../settings/custom.yml"
+if custom_settings.exists():
+    settings_file = custom_settings.resolve()
+if not settings_file.exists():
+    logger.error(f"Pyradiomics settings file not found at: {settings_file}")
+    exit(1)
+logger.info(f"Using Pyradiomics settings file at: {settings_file}")
+
+# create csv for batch processing
+# Image, Mask, Label
+batch_csv = args.output / "pyradiomics_batch.csv"
+with open(batch_csv, "w") as f:
+    f.write("Image,Mask,Label\n")
+    for label in [1, 2, 3]:
+        f.write(f"{cropped_input},{pci_output},{label}\n")
+
+# python -c "from radiomics.scripts import parse_args; parse_args()"
+feature_output = args.output / "pyradiomics_features.csv"
+if feature_output.exists():
+    logger.info(f"Deleting existing feature output file: {feature_output}")
+    feature_output.unlink()
+command = [
+    "python",
+    "-c",
+    "from radiomics.scripts import parse_args; parse_args()",
+    str(batch_csv),
+    "--out",
+    str(feature_output),
+    "--param",
+    str(settings_file),
+    "--setting",
+    f"label:{label}",
+    "--format",
+    "csv",
+    "--jobs",
+    "3",
+    
+]
+subprocess.check_call(command)
+
+logger.info("Feature extraction completed.")
+# %%
