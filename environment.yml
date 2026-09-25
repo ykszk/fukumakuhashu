@@ -1,7 +1,7 @@
-name: hashu
+name: pc-radiomics
 dependencies:
   - python=3.13
   - TotalSegmentator=2.11.0
   - pyradiomics=3.1.0
   - loguru
-  - raumel.yaml=0.17.40 # required version for `safe_load` in pyradiomics
+  - ruamel.yaml=0.17.40 # required version for `safe_load` in pyradiomics

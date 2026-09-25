@@ -207,13 +207,10 @@ command = [
     str(feature_output),
     "--param",
     str(settings_file),
-    "--setting",
-    f"label:{label}",
     "--format",
     "csv",
     "--jobs",
     "3",
-    
 ]
 subprocess.check_call(command)
 
