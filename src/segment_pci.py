@@ -9,7 +9,7 @@ from loguru import logger
 parser = argparse.ArgumentParser()
 # total segmentator output
 parser.add_argument("--total", default='../../data/example/Panoramix-cropped segmentation.seg.nrrd')
-# muscle fat output
+# tissue segmentation output (TotalSegmentator tissue_4_types)
 parser.add_argument("--muscle_fat", default='../../data/example/Panoramix-cropped.muscle_fat.nii.gz')
 # output path
 parser.add_argument("--output", default='../../data/example/Panoramix-cropped.pci.nii.gz')
@@ -38,7 +38,8 @@ plt.colorbar()
 plt.imshow(arr_muscle_fat[:, col_slice], cmap='tab20')
 plt.colorbar()
 #%%
-L_FAT = 3
+# tissue_4_types labels: 1=subcutaneous_fat, 2=torso_fat (VAT), 3=skeletal_muscle, 4=intermuscular_fat
+L_FAT = 2
 arr_fat = arr_muscle_fat==L_FAT
 plt.imshow(arr_fat[:, col_slice], cmap='gray')
 # %%

@@ -20,13 +20,6 @@ parser.add_argument(
     help="Path to the output directory.",
     default="/tmp/pci",
 )
-# temporary directory for nnUNet
-parser.add_argument(
-    "--tmpdir",
-    type=Path,
-    help="Path to temporary directory for nnUNet.",
-    default="/tmp/nnUNet",
-)
 # skip existing outputs
 parser.add_argument(
     "--skip_existing",
@@ -91,42 +84,27 @@ else:
     logger.info("Cropping abdomen completed.")
 
 #%%
-muscle_fat_output = args.output / "muscle_fat.nii.gz"
-script = Path(__file__).parent / "../CT-Muscle-and-Fat-Segmentation/predict_muscle_fat.py"
-script = script.resolve()
-logger.info(f"Using script at: {script}")
-# Run the muscle-fat segmentation script
-command = [
-    "python",
-    str(script),
-    "--input",
-    str(cropped_input),
-    "--output",
-    str(muscle_fat_output),
-]
+muscle_fat_output = args.output / "tissue_4_types.nii.gz"
 if args.skip_existing and muscle_fat_output.exists():
-    logger.warning(f"Muscle-Fat Segmentation output already exists at {muscle_fat_output}, skipping.")
+    logger.warning(f"Tissue segmentation output already exists at {muscle_fat_output}, skipping.")
 else:
     logger.info(
-        f"Running Muscle-Fat Segmentation with input: {cropped_input} and output: {muscle_fat_output}"
+        f"Running TotalSegmentator tissue_4_types with input: {cropped_input} and output: {muscle_fat_output}"
     )
-    original_dir = Path.cwd()
-    # Change working directory to the script's directory
-    import os
-    os.chdir(script.parent)
-    # Set dummy nnUNet environment variables
-    os.environ["nnUNet_raw"] = str(args.tmpdir / "raw")
-    os.environ["nnUNet_preprocessed"] = str(args.tmpdir / "preprocessed")
-    os.environ["nnUNet_results"] = str(args.tmpdir / "results")
-    try:
-        subprocess.check_output(command)
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Muscle-Fat Segmentation failed with error: {e.output.decode()}")
-        logger.error(f"Command: {' '.join(command)}")
-        raise e
-    # Change back to the original working directory
-    os.chdir(original_dir)
-    logger.info("Muscle-Fat Segmentation completed.")
+    command = [
+        "python",
+        "-m",
+        "totalsegmentator.bin.TotalSegmentator",
+        "--task",
+        "tissue_4_types",
+        "-ml",
+        "-i",
+        str(cropped_input),
+        "-o",
+        str(muscle_fat_output),
+    ]
+    subprocess.check_call(command)
+    logger.info("Tissue segmentation completed.")
 
 #%%
 logger.info("Segment PCI")

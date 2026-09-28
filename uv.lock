@@ -1595,33 +1595,25 @@ name = "peritoneal-cancer-radiomics"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "batchgenerators" },
     { name = "loguru" },
     { name = "matplotlib" },
-    { name = "nibabel" },
-    { name = "nnunetv2" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "pyradiomics" },
     { name = "ruamel-yaml" },
     { name = "simpleitk" },
-    { name = "torch" },
     { name = "totalsegmentator" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "batchgenerators", specifier = ">=0.25.1" },
     { name = "loguru" },
     { name = "matplotlib", specifier = ">=3.9.2" },
-    { name = "nibabel", specifier = ">=5.2.1" },
-    { name = "nnunetv2", specifier = ">=2.5.1" },
     { name = "numpy", specifier = ">=1.26.4" },
     { name = "pandas", specifier = ">=2.2.2" },
     { name = "pyradiomics", directory = "vendor/pyradiomics-3.1.0" },
     { name = "ruamel-yaml", specifier = "==0.17.40" },
     { name = "simpleitk", specifier = ">=2.3.1" },
-    { name = "torch", specifier = ">=2.4.0" },
     { name = "totalsegmentator", specifier = "==2.11.0" },
 ]
 
