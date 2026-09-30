@@ -3,6 +3,7 @@ import numpy as np
 import SimpleITK as sitk
 import argparse
 from loguru import logger
+from scipy import ndimage
 
 # Peritoneal Cancer Index (PCI) segmentation (upper/mid/lower abdomen fat)
 
@@ -13,6 +14,11 @@ parser.add_argument("--total", default='../../data/example/Panoramix-cropped seg
 parser.add_argument("--muscle_fat", default='../../data/example/Panoramix-cropped.muscle_fat.nii.gz')
 # output path
 parser.add_argument("--output", default='../../data/example/Panoramix-cropped.pci.nii.gz')
+# output path for the "remove" mask (non-fat regions cleared from the fat mask)
+parser.add_argument("--remove_output", default='../../data/example/Panoramix-cropped.remove.nii.gz')
+# margin (mm) to shrink digestive organs by before excluding them, so perivisceral/mesenteric
+# fat immediately adjacent to bowel/stomach isn't accidentally stripped out
+parser.add_argument("--digestive_shrink_mm", type=float, default=1.0)
 
 args, _unknown = parser.parse_known_args()
 orientation = "LPS"
@@ -38,9 +44,51 @@ plt.colorbar()
 plt.imshow(arr_muscle_fat[:, col_slice], cmap='tab20')
 plt.colorbar()
 #%%
+from ts import total_ct
+import cc3d
+
+# Build a "remove" mask from TotalSegmentator's `total` labels to clear non-fat
+# regions (organs, bone, vessels, muscle, etc.) that leak into the fat mask.
+#
+# Solid/well-defined structures (liver, kidneys, spleen, bone, muscle, vessels, ...)
+# are excluded wholesale: any voxel TotalSegmentator assigned to one of them can
+# never legitimately be fat.
+#
+# Digestive-tract organs (stomach, small bowel, duodenum, colon, esophagus) are
+# treated differently: their lumen/wall segmentation is looser and variable
+# (peristalsis, filling state, partial volume), and a lot of clinically relevant
+# perivisceral/mesenteric fat sits immediately adjacent to bowel. Excluding the
+# full digestive mask would strip that fat too, so it's shrunk by a margin first
+# and only the eroded "core" is added to `remove`.
+DIGESTIVE_LABELS = [
+    total_ct.ESOPHAGUS,
+    total_ct.STOMACH,
+    total_ct.SMALL_BOWEL,
+    total_ct.DUODENUM,
+    total_ct.COLON,
+]
+digestive_mask = np.isin(arr_total, DIGESTIVE_LABELS)
+non_digestive_mask = (arr_total > 0) & ~digestive_mask
+
+spacing_zyx = img_total.GetSpacing()[::-1]
+digestive_dist = ndimage.distance_transform_edt(digestive_mask, sampling=spacing_zyx)
+digestive_eroded = digestive_dist > args.digestive_shrink_mm
+
+# remove labels: 1=non-digestive (organs/bone/vessels/muscle), 2=digestive organs (eroded core)
+remove = np.zeros_like(arr_total, dtype=np.uint8)
+remove[non_digestive_mask] = 1
+remove[digestive_eroded] = 2
+
+img_remove = sitk.GetImageFromArray(remove)
+img_remove.CopyInformation(img_total)
+img_remove = sitk.DICOMOrient(img_remove, original_orientation)
+sitk.WriteImage(img_remove, args.remove_output)
+logger.info(f"Remove mask saved to {args.remove_output}")
+
+#%%
 # tissue_4_types labels: 1=subcutaneous_fat, 2=torso_fat (VAT), 3=skeletal_muscle, 4=intermuscular_fat
 L_FAT = 2
-arr_fat = arr_muscle_fat==L_FAT
+arr_fat = (arr_muscle_fat==L_FAT) & (remove == 0)
 plt.imshow(arr_fat[:, col_slice], cmap='gray')
 # %%
 
@@ -48,9 +96,6 @@ plt.imshow(arr_fat[:, col_slice], cmap='gray')
 # upper: liver top to lower costal arch
 # middle: lower costal arch to iliac crest
 # lower: iliac crest to public sympysis (but use lower sacram as a proxy)
-
-from ts import total_ct
-import cc3d
 
 liver = arr_total==total_ct.LIVER
 liver_indices = np.where(liver)

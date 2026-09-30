@@ -110,6 +110,7 @@ else:
 logger.info("Segment PCI")
 script = Path(__file__).parent / "segment_pci.py"
 pci_output = args.output / "pci_segmentation.nii.gz"
+remove_output = args.output / "remove.nii.gz"
 command = [
     "python",
     str(script),
@@ -119,8 +120,10 @@ command = [
     str(muscle_fat_output),
     "--output",
     str(pci_output),
+    "--remove_output",
+    str(remove_output),
 ]
-if args.skip_existing and pci_output.exists():
+if args.skip_existing and pci_output.exists() and remove_output.exists():
     logger.warning(f"PCI Segmentation output already exists at {pci_output}, skipping.")
 else:
     subprocess.check_call(command)
