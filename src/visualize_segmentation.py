@@ -72,8 +72,27 @@ total_colors = np.concatenate([total_colors, np.ones((total_colors.shape[0],1))]
 total_colors[0,:] = np.array([0,0,0,0])
 total_cmap = matplotlib.colors.ListedColormap(total_colors)
 
+# crop each view to the body (from the tissue mask) plus a margin, so panels
+# aren't dominated by empty black background / scanner table
+margin_mm = 20
+
+def bbox_from_mask(mask2d, margin_px_row, margin_px_col):
+    rows = np.any(mask2d, axis=1)
+    cols = np.any(mask2d, axis=0)
+    if not rows.any() or not cols.any():
+        return slice(None), slice(None)
+    r0, r1 = np.where(rows)[0][[0, -1]]
+    c0, c1 = np.where(cols)[0][[0, -1]]
+    r0 = max(0, r0 - margin_px_row)
+    r1 = min(mask2d.shape[0], r1 + margin_px_row + 1)
+    c0 = max(0, c0 - margin_px_col)
+    c1 = min(mask2d.shape[1], c1 + margin_px_col + 1)
+    return slice(r0, r1), slice(c0, c1)
+
 ref_indexes = [kidney_left_top, liver_center[1], ts_center[2]]
 aspects = [spacings[1]/spacings[2], spacings[0]/spacings[2], spacings[0]/spacings[1]]
+# (row_spacing, col_spacing) for each view, matching the axes selected by `index` below
+row_col_spacings = [(spacings[1], spacings[2]), (spacings[0], spacings[2]), (spacings[0], spacings[1])]
 view_names = ['Axial', 'Coronal', 'Sagittal']
 plt.figure(figsize=(10,10))
 for i, slice_index in enumerate(ref_indexes):
@@ -85,27 +104,39 @@ for i, slice_index in enumerate(ref_indexes):
         index = (slice(None), slice_index, slice(None))
     elif view_name == 'Sagittal':
         index = (slice(None), slice(None), slice_index)
+
+    row_sp, col_sp = row_col_spacings[i]
+    margin_row_px = round(margin_mm / row_sp)
+    margin_col_px = round(margin_mm / col_sp)
+    row_slice, col_slice = bbox_from_mask(muscle_fat[index] > 0, margin_row_px, margin_col_px)
+    crop = (row_slice, col_slice)
+
+    ct_view = image_array[index][crop]
+    total_view = total[index][crop]
+    muscle_fat_view = muscle_fat[index][crop]
+    pci_view = pci[index][crop]
+
     # ct image
     plt.subplot(3, 4, i*4+1)
-    plt.imshow(image_array[index], cmap='gray', aspect=aspect)
+    plt.imshow(ct_view, cmap='gray', aspect=aspect)
     plt.title("CT")
     plt.axis('off')
     # ct image with segmentation overlay
     plt.subplot(3, 4, i*4+2)
-    plt.imshow(image_array[index], cmap='gray', aspect=aspect)
-    plt.imshow(total[index], cmap=total_cmap, alpha=0.5, aspect=aspect, interpolation='none')
+    plt.imshow(ct_view, cmap='gray', aspect=aspect)
+    plt.imshow(total_view, cmap=total_cmap, alpha=0.5, aspect=aspect, interpolation='none')
     plt.title("TotalSegmentator")
     plt.axis('off')
     # ct image with muscle/fat overlay
     plt.subplot(3, 4, i*4+3)
-    plt.imshow(image_array[index], cmap='gray', aspect=aspect)
-    plt.imshow(muscle_fat[index], cmap=total_cmap, alpha=0.8, aspect=aspect, interpolation='none')
+    plt.imshow(ct_view, cmap='gray', aspect=aspect)
+    plt.imshow(muscle_fat_view, cmap=total_cmap, alpha=0.8, aspect=aspect, interpolation='none')
     plt.title("Muscle/Fat")
     plt.axis('off')
     # ct image with pci overlay
     plt.subplot(3, 4, i*4+4)
-    plt.imshow(image_array[index], cmap='gray', aspect=aspect)
-    plt.imshow(pci[index], cmap='hot', alpha=0.7, aspect=aspect, interpolation='none')
+    plt.imshow(ct_view, cmap='gray', aspect=aspect)
+    plt.imshow(pci_view, cmap='hot', alpha=0.7, aspect=aspect, interpolation='none')
 
     plt.title("PCI")
     plt.axis('off')
