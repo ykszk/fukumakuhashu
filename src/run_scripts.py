@@ -1,5 +1,6 @@
 # %%
 import argparse
+import csv
 from pathlib import Path
 import subprocess
 import sys
@@ -196,6 +197,29 @@ command = [
     "3",
 ]
 subprocess.check_call(command)
+
+
+def drop_zero_imaginary(cell):
+    # pyradiomics' shape features (axis lengths, elongation, flatness) take square
+    # roots of np.linalg.eigvals(covariance), which with numpy 2 returns complex
+    # values even for this symmetric matrix, so the CSV gets e.g. "(0.97+0j)".
+    # Keep only the real part, and only when the imaginary part is exactly 0.
+    if not (cell.startswith("(") and cell.endswith("j)")):
+        return cell
+    try:
+        value = complex(cell)
+    except ValueError:
+        return cell
+    return repr(value.real) if value.imag == 0 else cell
+
+
+with open(feature_output, newline="") as f:
+    rows = list(csv.reader(f))
+cleaned = [[drop_zero_imaginary(cell) for cell in row] for row in rows]
+if cleaned != rows:
+    with open(feature_output, "w", newline="") as f:
+        csv.writer(f, lineterminator="\n").writerows(cleaned)
+    logger.info("Converted complex-valued features with zero imaginary part to real numbers.")
 
 logger.info("Feature extraction completed.")
 # %%

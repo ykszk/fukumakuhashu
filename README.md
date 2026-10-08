@@ -42,6 +42,8 @@ uv run python src/run_scripts.py --input <path/to/ct.nii.gz> --output <output_di
 
 Outputs land in `<output_dir>/`: `total_segmentator.nii.gz`, `abdomen_cropped.nii.gz`, `tissue_4_types.nii.gz`, `remove.nii.gz`, `pci_segmentation.nii.gz`, `segmentation_visualization.png`, `pyradiomics_features.csv` (one row per PCI zone).
 
+The shape features `Elongation`, `Flatness` and the `Major`/`Minor`/`LeastAxisLength` come out of pyradiomics as complex numbers with a zero imaginary part (e.g. `(0.97+0j)`): it takes their square roots from `np.linalg.eigvals`, which returns complex values under numpy 2. `run_scripts.py` rewrites those cells as plain real numbers after extraction, so the CSV loads as numeric; cells with a nonzero imaginary part are left as written.
+
 ## Ascites segmentation (optional, separate)
 
 `ascites/` is a standalone environment for the [Task505_TCGA-OV ascites model](https://github.com/rsummers11/Ascites) (nnU-Net v1) — kept separate from the main pipeline since it needs a different Python version (3.10) and doesn't share any dependencies with it. See `ascites/README.md` for setup. It isn't wired into `run_scripts.py`; run it separately on a case's `abdomen_cropped.nii.gz`.
