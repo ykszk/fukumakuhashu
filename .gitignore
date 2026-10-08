@@ -15,3 +15,6 @@ models/
 
 # Input scans and pipeline outputs (patient data)
 data/
+
+# Built from docs/user-manual.md by docs/build_manual_pdf.py
+docs/user-manual.pdf
