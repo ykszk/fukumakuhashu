@@ -16,4 +16,8 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-pyradiomics = { path = "vendor/pyradiomics-3.1.0" }
+# Pinned to a commit past v3.1.0 that fixes the Python 3.12+ build (versioneer.py's
+# SafeConfigParser/readfp were removed upstream). Pinned to an exact SHA rather than
+# `master` since this also includes unrelated behavior changes (e.g. a GLDM SDE
+# formula fix) past what's needed for the build fix alone.
+pyradiomics = { git = "https://github.com/AIM-Harvard/pyradiomics.git", rev = "8ed579383b44806651c463d5e691f3b2b57522ab" }

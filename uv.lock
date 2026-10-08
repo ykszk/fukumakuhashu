@@ -1611,7 +1611,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "numpy", specifier = ">=1.26.4" },
     { name = "pandas", specifier = ">=2.2.2" },
-    { name = "pyradiomics", directory = "vendor/pyradiomics-3.1.0" },
+    { name = "pyradiomics", git = "https://github.com/AIM-Harvard/pyradiomics.git?rev=8ed579383b44806651c463d5e691f3b2b57522ab" },
     { name = "ruamel-yaml", specifier = "==0.17.40" },
     { name = "simpleitk", specifier = ">=2.3.1" },
     { name = "totalsegmentator", specifier = "==2.11.0" },
@@ -1822,23 +1822,13 @@ wheels = [
 
 [[package]]
 name = "pyradiomics"
-version = "3.0.1a1"
-source = { directory = "vendor/pyradiomics-3.1.0" }
+version = "3.1.1.dev111+g8ed579383"
+source = { git = "https://github.com/AIM-Harvard/pyradiomics.git?rev=8ed579383b44806651c463d5e691f3b2b57522ab#8ed579383b44806651c463d5e691f3b2b57522ab" }
 dependencies = [
     { name = "numpy" },
     { name = "pykwalify" },
     { name = "pywavelets" },
     { name = "simpleitk" },
-    { name = "six" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy" },
-    { name = "pykwalify" },
-    { name = "pywavelets" },
-    { name = "simpleitk" },
-    { name = "six" },
 ]
 
 [[package]]
