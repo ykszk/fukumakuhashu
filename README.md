@@ -22,6 +22,8 @@ Each stage's output is cached under `--output`; pass `--skip_existing` to skip s
 uv sync
 ```
 
+pyradiomics is pinned to an upstream git commit (see `[tool.uv.sources]` in `pyproject.toml`) and has C extensions. On Windows with Python 3.13 it installs from a wheel prebuilt from that commit (`vendor/`), so no C compiler (MSVC) is needed; elsewhere it's built from source, which needs one. Rebuild the wheel whenever the pin changes; the steps are in the `pyproject.toml` comment.
+
 Requires a **TotalSegmentator academic/commercial license** for the `tissue_4_types` task (the `total` task is free). Register one with:
 
 ```bash

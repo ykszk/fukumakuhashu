@@ -20,4 +20,13 @@ dependencies = [
 # SafeConfigParser/readfp were removed upstream). Pinned to an exact SHA rather than
 # `master` since this also includes unrelated behavior changes (e.g. a GLDM SDE
 # formula fix) past what's needed for the build fix alone.
-pyradiomics = { git = "https://github.com/AIM-Harvard/pyradiomics.git", rev = "8ed579383b44806651c463d5e691f3b2b57522ab" }
+# On Windows, use a wheel prebuilt from that same commit so setup doesn't need MSVC
+# for pyradiomics' C extensions. Rebuild it whenever the rev changes:
+#   git clone https://github.com/AIM-Harvard/pyradiomics.git <short path> && git -C <short path> checkout <rev>
+#   uv build --wheel --python 3.13 --out-dir vendor <short path>
+# (a short source path: MSBuild fails past Windows' 260-character path limit),
+# then delete the vendor/.gitignore uv build creates. (Not wheels/: .gitignore ignores it.)
+pyradiomics = [
+    { path = "vendor/pyradiomics-3.1.1.dev111+g8ed579383-cp313-cp313-win_amd64.whl", marker = "sys_platform == 'win32' and python_version == '3.13'" },
+    { git = "https://github.com/AIM-Harvard/pyradiomics.git", rev = "8ed579383b44806651c463d5e691f3b2b57522ab", marker = "sys_platform != 'win32' or python_version != '3.13'" },
+]
