@@ -2,6 +2,7 @@
 import argparse
 from pathlib import Path
 import subprocess
+import sys
 
 from loguru import logger
 
@@ -44,7 +45,7 @@ else:
     # python -m totalsegmentator.bin.TotalSegmentator --task total -ml -bs -i INPUT -o OUTPUT
     command = [
         # "TotalSegmentator",
-        "python",
+        sys.executable,
     "-m",
     "totalsegmentator.bin.TotalSegmentator",
     "--task",
@@ -66,7 +67,7 @@ script = Path(__file__).parent / "crop_abdomen.py"
 cropped_input = args.output / "abdomen_cropped.nii.gz"
 cropped_total = args.output / "abdomen_cropped_total_segmentator.nii.gz"
 command = [
-    "python",
+    sys.executable,
     str(script),
     "--input",
     str(args.input),
@@ -92,7 +93,7 @@ else:
         f"Running TotalSegmentator tissue_4_types with input: {cropped_input} and output: {muscle_fat_output}"
     )
     command = [
-        "python",
+        sys.executable,
         "-m",
         "totalsegmentator.bin.TotalSegmentator",
         "--task",
@@ -112,7 +113,7 @@ script = Path(__file__).parent / "segment_pci.py"
 pci_output = args.output / "pci_segmentation.nii.gz"
 remove_output = args.output / "remove.nii.gz"
 command = [
-    "python",
+    sys.executable,
     str(script),
     "--total",
     str(cropped_total),
@@ -136,7 +137,7 @@ if args.skip_existing and image_output.exists():
     logger.warning(f"Visualization output already exists at {image_output}, skipping.")
 else:
     command = [
-        "python",
+        sys.executable,
         str(script),
         "--image",
         str(cropped_input),
@@ -172,7 +173,8 @@ batch_csv = args.output / "pyradiomics_batch.csv"
 with open(batch_csv, "w") as f:
     f.write("Image,Mask,Label\n")
     for label in [1, 2, 3]:
-        f.write(f"{cropped_input},{pci_output},{label}\n")
+        # pyradiomics resolves relative paths against the CSV's directory
+        f.write(f"{cropped_input.resolve()},{pci_output.resolve()},{label}\n")
 
 # python -c "from radiomics.scripts import parse_args; parse_args()"
 feature_output = args.output / "pyradiomics_features.csv"
@@ -180,7 +182,7 @@ if feature_output.exists():
     logger.info(f"Deleting existing feature output file: {feature_output}")
     feature_output.unlink()
 command = [
-    "python",
+    sys.executable,
     "-c",
     "from radiomics.scripts import parse_args; parse_args()",
     str(batch_csv),

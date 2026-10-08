@@ -12,3 +12,6 @@ wheels/
 # Downloaded model weights (large binaries, not source)
 ascites_model/
 models/
+
+# Input scans and pipeline outputs (patient data)
+data/
